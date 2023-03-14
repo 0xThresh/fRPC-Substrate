@@ -52,12 +52,6 @@ Clone the repo, if you haven't done so already, and in the *gateway* directory, 
 npm i
 ```
 
-If you don't have Fluence CLI installed, do:
-
-```bash
-npm -g i @fluencelabs/cli@latest
-```
-
 Before you proceed, you  should have, say, three RPC endpoint urls, e.g., Infura, Alchemy and QuickNode, for the same EVM-based chain you are using in your dAPP. Update the `configs/quickstart_config.json` by providing your endpoint urls and ignore the rest of the parameters for now:
 
 ```json
@@ -95,6 +89,12 @@ Result /Users/bebo/localdev/fRPC-Substrate/gateway/aqua-compiled/rpc.d.ts: compi
 Running server...
 Server was started on port 3000
 
+```
+
+Alternatively, you can run the gateway as a Docker container, by running the following commands. Note that you must start from the base folder of the repo rather than from the *gateway* folder: 
+```
+docker build -t frpc-gateway .
+docker run -p 3000:3000 frpc-gateway
 ```
 
 With the gateway ready for action, all you have to do is change your dApps HTTP transport url to `http://127.0.0.1:3000` and keep using your dApp as usual. In the absence of a dAPP, we can interact with the gateway from the command line:
@@ -135,7 +135,7 @@ Call will be to : https://frequent-sleek-river.ethereum-goerli.discover.quiknode
 
 ```
 
-Success! Go ahead and replace the `round-robin` mode with the `random` mode in your config file, stop and start the gateway and have a look at the different endpoint management.
+Success! Go ahead and replace the `round-robin` mode with the `random` mode in your config file, stop and start the gateway and have a look at the different endpoint management. Note that if you are using Docker, you will need to rebuild the Dockerfile and start a new container after making changes to the config file in order for the changes to take effect. 
 
 Congrat's, you just took a major step toward keeping you dAPP decentralized, available and performant! Now it's time to dive into the Fluence protocol and technology stack to learn how to improve upon the basic substrate and compete for hackathon bounties.
 
@@ -571,8 +571,6 @@ One little command is doing quite a bit so you don't have to. Let's work through
 
 Fluence CLI did a hole bunch of work for us behind the scenes and signing the transaction is a lot quicker than entering (virtual) credit card information. The parametric details necessary to write Aqua scripts are save in [deals.aqua](./.fluence/aqua/deals.aqua) and serves as an important dependency in your Aqua scripts, as we'll see in the next section.
 
-Note that the deal's section in [fluence.yaml](./fluence.yaml) specifies the number of workers that should be deployed specified by *targetWorkers*. The default is three (3) and can be customized. It is important to note that this is a desire not a guarantee as the actual deployment depends on the number of peers willing to participate in the deal. Currently, *all* the testnet peers operate by Fluence will participate in your deal.  
-
 ### fRPC Algorithms
 
 Now that we got our services deployed and ready for action, it's time to look at Aqua, which is utilized by the Gateway to bridge HTTP to/fro libp2p. The fRPC substrate comes with basic implementations of several algorithms useful in mitigating failure as the result of availability and lack of trustlessness with respect to RPC endpoints and possibly peers. Before we dive into the algorithms, let's have a look at the Aqua code and structure.
@@ -673,9 +671,10 @@ func quorum(
   <- quorumResult
 ```
 
-A quorum, aka "off-chain consensus", "determines" a result by a ranked frequency distribution of the result pool and makes a selection against a quorum threshold value, e.g., 2/3 of items in the results pool must be equal for a quorum result to accepted. Moreover, additional parameters such as minimum number of items in the result pool may be added. depending on you trust of the peers processing the endpoint requests or even the peer executing the quorum algorithm, additional verification steps may have to be added. There is one more pertinent consideration when it comes to designing quorum algorithms: the differentiation betwen (on-chain) read and write operations.
+A quorum, aka "off-chain consensus", "determines" a result by a ranked frequency distribution of the result pool and makes a selection against a quorum threshold value, e.g., 2/3 of items in the results pool must be equal for a quorum result to accepted. Moreover, additional parameters such as minimum number of items in the result pool may be added. depending on you trust of the peers processing the endpoint requests or even the peer executing the quorum algorithm, additional verification steps may have to be added.
 
-In the fRPC substrate implementation, we provide a basic quorum algo that polls each endpoint in parallel (1) and captures the results in a stream variable (2) and bound the loop with a timeout condition running (3) in parallel to (1). See the [Aqua book](https://fluence.dev/docs/aqua-book/language/flow/parallel#timeout-and-race-patterns) for more details. Finally, we check the results and return the result (4). As evidenced by the code, no considerations to differentiate between rad and write operations is made, wich might prove disadvantageous when submitting, for example, a signed transaction (hint, hint to all you hackathon participants).
+In the fRPC substrate implementation, we provide a basic quorum algo that polls each endpoint in parallel (1) and captures the results in a stream variable (2) and bound the loop with a timeout condition running (3) in parallel to (1). See the [Aqua book](https://fluence.dev/docs/aqua-book/language/flow/parallel#timeout-and-race-patterns) for more details. Finally, we check the results and return the result (4).
+
 
 ## Summary
 
@@ -684,7 +683,3 @@ fRPC is a design pattern to efficiently mitigate risks inherent in centralized R
 For support, to discuss your ideas or to schedule presenntations of your solutions to the Fluence and fRPC community at large, reach out in [discord]("https://fluence.chat") or [telegram](https://t.me/fluence_project).
 
 Happy Hacking!
-
-## Contribution
-
-Found a mistake, inaccuracy or have other improvement suggestions? Open an issue or a pull request! Note that contributions submitted will be licensed according to the terms of [LICENSE](./LICENSE).
